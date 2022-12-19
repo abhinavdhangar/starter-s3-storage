@@ -6,6 +6,38 @@ app.use(fileUpload());
 
 var AWS = require("aws-sdk");
 
+const getFileUrl = (key) => {
+  return `http://${process.env.AWS_BUCKET_NAME}.s3-${process.env.AWS_REGION}.amazonaws.com/${key}`
+}
+app.post("/url",(req,res)=>{
+  const {key} = req.body
+  // let url = `http://${process.env.AWS_BUCKET_NAME}.s3-${process.env.AWS_REGION}.amazonaws.com/${key}`
+
+ const getS3PresignedUrl = (key, expireSeconds = 60 * 60, ACL = 'public-read') => {
+  if (!key) return Promise.resolve(null)
+
+  const fileType = getFileType(key)
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: key,
+    Expires: expireSeconds,
+    ACL,
+    ContentType: fileType
+  }
+
+  return new Promise((resolve, reject) => {
+    s3.getSignedUrl('putObject', params, (err, url) => {
+      if (err) return reject(err)
+      resolve({
+        signedUrl: url,
+        contentType: fileType,
+        fileUrl: getFileUrl(envKey)
+      })
+    })
+  })
+}
+res.send(getS3PresignedUrl(key))
+})
 app.post("/imageUpload", async (req, res) => {
   AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Access key ID
