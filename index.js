@@ -12,6 +12,14 @@ const getFileUrl = (key) => {
 app.post("/url",(req,res)=>{
   const {key} = req.body
   // let url = `http://${process.env.AWS_BUCKET_NAME}.s3-${process.env.AWS_REGION}.amazonaws.com/${key}`
+  AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Access key ID
+    secretAccesskey: process.env.AWS_SECRET_ACCESS_KEY, // Secret access key
+    region: "eu-west-1", //Region,
+    
+  });
+
+  const s3 = new AWS.S3();
 
 
   // const fileType = getFileType(key)
