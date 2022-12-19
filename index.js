@@ -16,13 +16,13 @@ app.post("/url",(req,res)=>{
  const getS3PresignedUrl = (key, expireSeconds = 60 * 60, ACL = 'public-read') => {
   if (!key) return Promise.resolve(null)
 
-  const fileType = getFileType(key)
+  // const fileType = getFileType(key)
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: key,
     Expires: expireSeconds,
     ACL,
-    ContentType: fileType
+    // ContentType: fileType
   }
 
   return new Promise((resolve, reject) => {
@@ -30,8 +30,8 @@ app.post("/url",(req,res)=>{
       if (err) return reject(err)
       resolve({
         signedUrl: url,
-        contentType: fileType,
-        fileUrl: getFileUrl(envKey)
+        // contentType: fileType,
+        // fileUrl: getFileUrl(envKey)
       })
     })
   })
