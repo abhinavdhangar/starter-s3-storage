@@ -46,17 +46,11 @@ app.post('/posts', upload.single('image'), async (req, res) => {
   }
 
   // Send the upload to S3
-  await s3Client.send(new PutObjectCommand(uploadParams));
+  await s3Client.send(new PutObjectCommand(uploadParams)).then(res=>{
+    res.send(res.$metadata)
+  })
 
-  // Save the image name to the database. Any other req.body data can be saved here too but we don't need any other image data.
-  // const post = await prisma.posts.create({
-  //   data: {
-  //     imageName,
-  //     caption,
-  //   }
-  // })
 
-  res.send(post)
 })
 
 
