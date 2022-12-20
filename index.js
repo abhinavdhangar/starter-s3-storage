@@ -57,21 +57,24 @@ app.post('/posts', upload.single('image'), async (req, res) => {
 app.get("/", async (req, res) => {
   let {key} = req.query
 
- let url =  await getSignedUrl(
-      s3Client,
-    new  GetObjectCommand({
-        Bucket: bucketName,
-        Key: key
-      }),
-      { expiresIn: 60 }// 60 seconds
-    )
-  
+//  let url =  await getSignedUrl(
+//       s3Client,
+//     new  GetObjectCommand({
+//         Bucket: bucketName,
+//         Key: key
+//       }),
+//       { expiresIn: 60 }// 60 seconds
+//     )
+  let url = await s3Client.send( new  GetObjectCommand({
+            Bucket: bucketName,
+            Key: key
+          }))
 
   res.send(url)
 })
 
 app.delete("/api/posts/delete", async (req, res) => {
-  const {key } = req.body
+  const {key } = req.query
   // const post = await prisma.posts.findUnique({where: {id}}) 
 
   const deleteParams = {
