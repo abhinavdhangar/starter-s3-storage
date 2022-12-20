@@ -59,7 +59,7 @@ app.get("/", async (req, res) => {
 
  let url =  await getSignedUrl(
       s3Client,
-      GetObjectCommand({
+    new  GetObjectCommand({
         Bucket: bucketName,
         Key: key
       }),
