@@ -1,62 +1,94 @@
-var express = require("express");
-const fileUpload = require("express-fileupload");
-var AWS = require("aws-sdk");
-const app = express();
+import multer from 'multer'
+import sharp from 'sharp'
+import express from "express"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
-app.use(fileUpload());
+import crypto from 'crypto'
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 
-
-
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Access key ID
-  secretAccesskey: process.env.AWS_SECRET_ACCESS_KEY, // Secret access key
-  region: "eu-west-1", //Region,
-  
-});
-
-const s3 = new AWS.S3();
-
-app.post("/imageUpload", async (req, res) => {
-
-let {key } = req.body
-
-  const fileContent = Buffer.from(req.files.uploadedFileName.data, "binary");
-  // Setting up S3 upload parameters
-  const params = {
-    
-    Bucket: "cyclic-nice-ruby-sea-urchin-garb-eu-west-1",
-    Key: key, // File name you want to save as  in S3
-    Body: fileContent,
-      acl: 'public-read'
-  };
-
-  // Uploading files to the bucket
-  s3.upload(params, function (err, data) {
-    if (err) {
-      throw err;
-    }
-    res.send({
-      response_code: 200,
-      response_message: "Success",
-      response_data: data,
-    });
-  });
-});
-
-app.get("/de", async (req,res)=>{
-  let {key} = req.query
-  let my_file = await s3.getObject({
-    Bucket: "cyclic-nice-ruby-sea-urchin-garb-eu-west-1",
-    Key: key,
-}).promise()
-
-
-res.send(JSON.stringify(my_file))
-
-})
+import dotenv from 'dotenv'
+const app = express()
+dotenv.config()
 const port = process.env.PORT || 3000
+const bucketName = process.env.AWS_BUCKET_NAME 
+const region = process.env.AWS_BUCKET_REGION
+const accessKeyId = process.env.AWS_ACCESS_KEY_ID
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+
+const s3Client = new S3Client({
+  region,
+  credentials: {
+    accessKeyId,
+    secretAccessKey
+  }
+})
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+
+const generateFileName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
+
+app.post('/posts', upload.single('image'), async (req, res) => {
+  const file = req.file 
+  const caption = req.body.caption
+
+  const fileBuffer = await sharp(file.buffer)
+    .resize({ height: 360, width: 240, fit: "contain" })
+    .toBuffer()
+
+  // Configure the upload details to send to S3
+  const fileName = generateFileName()
+  const uploadParams = {
+    Bucket: bucketName,
+    Body: fileBuffer,
+    Key: fileName,
+    ContentType: file.mimetype
+  }
+
+  // Send the upload to S3
+  await s3Client.send(new PutObjectCommand(uploadParams));
+
+  // Save the image name to the database. Any other req.body data can be saved here too but we don't need any other image data.
+  // const post = await prisma.posts.create({
+  //   data: {
+  //     imageName,
+  //     caption,
+  //   }
+  // })
+
+  res.send(post)
+})
 
 
-app.listen(port, function () {
-  console.log("Example app listening on port 3000!");
-});
+app.get("/", async (req, res) => {
+  let {key} = req.query
+
+ let url =  await getSignedUrl(
+      s3Client,
+      GetObjectCommand({
+        Bucket: bucketName,
+        Key: key
+      }),
+      { expiresIn: 60 }// 60 seconds
+    )
+  
+
+  res.send(url)
+})
+
+app.delete("/api/posts/delete", async (req, res) => {
+  const {key } = req.body
+  // const post = await prisma.posts.findUnique({where: {id}}) 
+
+  const deleteParams = {
+    Bucket: bucketName,
+    Key: key,
+  }
+
+   s3Client.send(new DeleteObjectCommand(deleteParams))
+
+  // await prisma.posts.delete({where: {id}})
+  res.send(post)
+})
+
+app.listen(port,()=>{console.log("server is running ")})
