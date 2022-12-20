@@ -1,7 +1,7 @@
 import multer from 'multer'
 import sharp from 'sharp'
 import express from "express"
-import { GetObjectCommand } from "@aws-sdk/client-s3"
+import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 import crypto from 'crypto'
@@ -82,10 +82,9 @@ app.delete("/api/posts/delete", async (req, res) => {
     Key: key,
   }
 
-   s3Client.send(new DeleteObjectCommand(deleteParams))
+   s3Client.send(new DeleteObjectCommand(deleteParams)).then((res)=>{res.send("done")})
 
-  // await prisma.posts.delete({where: {id}})
-  res.send(post)
+
 })
 
 app.listen(port,()=>{console.log("server is running ")})
