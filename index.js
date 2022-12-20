@@ -50,8 +50,8 @@ app.get("/de", async (req,res)=>{
     Key: key,
 }).promise()
 
-console.log(JSON.parse(my_file))
-res.send(JSON.parse(my_file))
+
+res.send(JSON.stringify(my_file))
 
 })
 const port = process.env.PORT || 3000
